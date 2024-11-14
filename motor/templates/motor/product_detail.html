@@ -1,0 +1,102 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=shopping_cart" />
+    <title>{{ category|title }} Products</title>
+    <link rel="stylesheet" href="{% static 'motor/assets/css/style.css' %}">
+</head>
+<body>
+    <main class="products">
+        <div class="container">
+            <div class="producat_wrapper">
+                <!-- Product Image Section -->
+                <div class="producat_image">
+                    <div class="img_thumbnail">
+                        <img id="mainImage" src="{{ product.image.url }}" alt="{{ product.name }}">
+                        <div class="img_small">
+                            <!-- Assuming you have multiple images, replace with actual image sources -->
+                            <img src="{{ product.image.url }}" alt="{{ product.name }}" class="active" onclick="changeMainImage(this)">
+                            <img src="{% static 'motor/assets/images/image-product-2-thumbnail.jpg' %}" alt="{{ product.name }}" onclick="changeMainImage(this)">
+                            <img src="{% static 'motor/assets/images/image-product-3-thumbnail.jpg' %}" alt="{{ product.name }}" onclick="changeMainImage(this)">
+                            <img src="{% static 'motor/assets/images/image-product-4-thumbnail.jpg' %}" alt="{{ product.name }}" onclick="changeMainImage(this)">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product Content Section -->
+                <div class="producat_content">
+                    <p class="company_text">{{ product.company }}</p>
+                    <h2>{{ product.name }}</h2>
+                    <p class="producat_des">{{ product.description }}</p>
+                    <div class="price">
+                        <div class="discount_price">
+                            {% if product.discount_price %}
+                                <p class="normal_price">KES<span id="productPrice">{{ product.discount_price|floatformat:2 }}</span></p>
+                                <p><span class="discount">KES{{ product.price|floatformat:2 }}</span></p>
+                            {% else %}
+                                <p class="normal_price">KES<span id="productPrice">{{ product.price|floatformat:2 }}</span></p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Quantity and Add to Cart Section -->
+                    <div class="qty">
+                        <div class="btns">
+                            <button type="button" class="decrement" onclick="changeQuantity(-1)">-</button>
+                            <input type="text" id="qtyInput" class="qty_numbers" value="1" readonly>
+                            <button type="button" class="increment" onclick="changeQuantity(1)">+</button>
+                        </div>
+                        <form method="POST" action="{% url 'product_detail' product.id %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="quantity" id="hiddenQtyInput" value="1"> <!-- Hidden field for quantity -->     
+                            <button type="submit" class="add_cart">
+                                <span class="material-symbols-outlined">shopping_cart</span>
+                                <p>Add to Cart</p>
+                            </button>
+                        </form>
+                        
+                    </div>
+                </div>
+            </div>
+            <div>
+                <a href="{% url 'index' %}">Continue Shopping</a>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // JavaScript to handle Quantity and Price Update
+        let quantity = 1;
+        const unitPrice = parseFloat(document.getElementById("productPrice").textContent);
+        const qtyInput = document.getElementById("qtyInput");
+        const priceElement = document.getElementById("productPrice");
+        const hiddenQtyInput = document.getElementById("hiddenQtyInput"); // Get the hidden input element
+
+        function changeQuantity(amount) {
+            quantity += amount;
+            if (quantity < 1) quantity = 1;  // Minimum quantity is 1
+            qtyInput.value = quantity;
+            hiddenQtyInput.value = quantity; // Update hidden input field with the new quantity
+            updatePrice();
+        }
+
+        function updatePrice() {
+            const newPrice = (unitPrice * quantity).toFixed(2);
+            priceElement.textContent = newPrice;
+        }
+
+        // JavaScript to handle Main Image change on Thumbnail Click
+        function changeMainImage(thumbnail) {
+            const mainImage = document.getElementById("mainImage");
+            mainImage.src = thumbnail.src;
+            // Update active thumbnail styling
+            document.querySelectorAll('.img_small img').forEach(img => img.classList.remove('active'));
+            thumbnail.classList.add('active');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,155 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=shopping_cart" />
+    <title>{{ category|title }} Products</title>
+    <link rel="stylesheet" href="{% static 'motor/assets/css/style.css' %}">
+</head>
+<body class="body-cart">
+    <main class="main-cart">
+        <div class="basket">
+            <div class="basket-labels">
+                <ul class="ul-cart">
+                    <li class="item-cart item-heading-cart">Item</li>
+                    <li class="price-cart">Price</li>
+                    <li class="quantity-cart">Quantity</li>
+                    <li class="subtotal-cart">Subtotal</li>
+                </ul>
+            </div>
+            
+            {% for item in cart.items.all %}
+            <div class="basket-product" data-item-id="{{ item.id }}">
+                <div class="item-cart">
+                    <div class="product-image-cart">
+                        <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" class="product-frame-cart">
+                    </div>
+                    <div class="product-details-cart">
+                        <h1 class="h1-cart"><strong>{{ item.quantity }} x {{ item.product.name }}</strong></h1>
+                        <p class="p-cart">Product Code - {{ item.product.id }}</p>
+                    </div>
+                </div>
+                <div class="price-cart">{{ item.product.price }}</div>
+                <div class="quantity-cart">
+                    <input type="number" value="{{ item.quantity }}" min="1" class="quantity-field-cart">
+                </div>
+                <div class="subtotal-cart">{{ item.subtotal }}</div>
+                <div class="remove-cart">
+                    <!-- Form for removing the item -->
+                    <form method="POST" action="{% url 'remove_from_cart' item.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="button-cart remove-item-button">Remove</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+            <a href="{% url 'index' %}">Continue Shopping</a>
+        </div>
+    
+        <aside>
+            <div class="summary-cart">
+                <div class="summary-total-items-cart"><span class="total-items-cart">{{ cart.items.count }}</span> Items in your Bag</div>
+                <div class="summary-subtotal-cart">
+                    <div class="subtotal-title-cart">Subtotal</div>
+                    <div class="subtotal-value final-value-cart" id="basket-subtotal">{{ cart.total }}</div>
+                </div>
+                <div class="summary-total-cart">
+                    <div class="total-title-cart">Total</div>
+                    <div class="total-value final-value-cart" id="basket-total">{{ cart.total }}</div>
+                </div>
+                <div class="summary-checkout-cart">
+                    <button class="checkout-cta-cart">Go to Secure Checkout</button>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Set up remove button to handle AJAX deletion
+            document.querySelectorAll('.remove-item-button').forEach(button => {
+                button.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    const form = button.closest('form');
+                    const productRow = button.closest('.basket-product');
+                    const itemId = productRow.getAttribute('data-item-id');
+
+                    // Send AJAX request to server to remove item
+                    fetch(form.action, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': form.querySelector('[name="csrfmiddlewaretoken"]').value
+                        }
+                    }).then(response => {
+                        if (response.ok) {
+                            productRow.remove(); // Remove the item from the DOM
+                            recalculateCart(); // Update cart totals
+                            updateSumItems();
+                        } else {
+                            console.error('Failed to remove item');
+                        }
+                    }).catch(error => console.error('Error:', error));
+                });
+            });
+
+            // Update quantity and subtotal when quantity changes
+            document.querySelectorAll('.quantity-cart input').forEach(input => {
+                input.addEventListener('change', function () {
+                    updateQuantity(input);
+                });
+            });
+
+            // Initial calculation of the sum of items and total
+            updateSumItems();
+            recalculateCart();
+        });
+
+        function updateQuantity(quantityInput) {
+            const productRow = quantityInput.closest('.basket-product');
+            const price = parseFloat(productRow.querySelector('.price-cart').textContent);
+            const quantity = parseInt(quantityInput.value);
+            const linePrice = price * quantity;
+
+            // Update line price display
+            const subtotalElement = productRow.querySelector('.subtotal-cart');
+            subtotalElement.textContent = linePrice.toFixed(2);
+
+            // Recalculate the cart totals
+            recalculateCart();
+            updateSumItems();
+        }
+
+        function recalculateCart() {
+            let subtotal = 0;
+
+            // Sum up row totals
+            document.querySelectorAll('.basket-product').forEach(row => {
+                subtotal += parseFloat(row.querySelector('.subtotal-cart').textContent);
+            });
+
+            // Update subtotal and total display
+            document.getElementById('basket-subtotal').textContent = subtotal.toFixed(2);
+            document.getElementById('basket-total').textContent = subtotal.toFixed(2);
+
+            // Hide or show checkout button based on the total amount
+            const checkoutButton = document.querySelector('.checkout-cta-cart');
+            if (subtotal === 0) {
+                checkoutButton.style.display = 'none';
+            } else {
+                checkoutButton.style.display = 'block';
+            }
+        }
+
+        function updateSumItems() {
+            let sumItems = 0;
+            document.querySelectorAll('.quantity-cart input').forEach(input => {
+                sumItems += parseInt(input.value);
+            });
+            document.querySelector('.total-items-cart').textContent = sumItems;
+        }
+    </script>
+</body>
+</html>
